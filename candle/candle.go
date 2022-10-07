@@ -102,7 +102,7 @@ func (ch candleHandler) getResponseFromCandleMap(candles []model.Candle, rp Requ
 	filteredCandles := make([]model.Candle, 0)
 
 	for _, c := range candles {
-		if c.Time.After(requestTime) && c.Time.Before(requestTime.Add(1*time.Hour)) {
+		if (c.Time.Equal(requestTime) || c.Time.After(requestTime)) && c.Time.Before(requestTime.Add(1*time.Hour)) {
 			filteredCandles = append(filteredCandles, c)
 		}
 	}
