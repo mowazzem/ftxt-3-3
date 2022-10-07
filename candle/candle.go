@@ -95,6 +95,7 @@ func (ch candleHandler) getResponseFromCandleMap(candles []model.Candle, rp Requ
 	requestTime := time.Date(rp.Year, time.Month(rp.Month), rp.Day, rp.Hour, 0, 0, 0, time.Local)
 
 	priceSlice := make([]int, 0)
+	fmt.Println("$$", len(candles))
 
 	filteredCandles := make([]model.Candle, 0)
 
