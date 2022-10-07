@@ -117,6 +117,8 @@ func (ch candleHandler) getResponseFromCandleMap(candles []model.Candle, rp Requ
 		return filteredCandles[i].Time.Before(filteredCandles[j].Time)
 	})
 
+	fmt.Println("$$", len(filteredCandles))
+
 	var high, low, open, closePirce int
 	if len(filteredCandles) > 0 {
 		high = priceSlice[len(priceSlice)-1]
