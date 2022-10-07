@@ -1,16 +1,20 @@
 package candle
 
 import (
+	"bufio"
 	"encoding/json"
+	"fmt"
 	"ftxt-3-3/model"
+	"log"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type candleHandler struct {
-	candleMap *model.CandleMap
 }
 
 type RequestParam struct {
@@ -20,10 +24,8 @@ type RequestParam struct {
 	Hour  int `json:"hour"`
 }
 
-func NewCandleHandler(cm *model.CandleMap) *candleHandler {
-	return &candleHandler{
-		candleMap: cm,
-	}
+func NewCandleHandler() *candleHandler {
+	return &candleHandler{}
 }
 
 func (ch *candleHandler) GetCandle(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +62,10 @@ func (ch *candleHandler) GetCandle(w http.ResponseWriter, r *http.Request) {
 	rp.Day = day
 	rp.Hour = hour
 
-	cm := *ch.candleMap
+	cm, err := getCandleMap()
+	if err != nil {
+		w.Write([]byte("error occured: " + err.Error()))
+	}
 	candles := cm[code]
 	respParams := ch.getResponseFromCandleMap(candles, rp)
 
@@ -111,13 +116,76 @@ func (ch candleHandler) getResponseFromCandleMap(candles []model.Candle, rp Requ
 		return filteredCandles[i].Time.Before(filteredCandles[j].Time)
 	})
 
+	var high, low, open, closePirce int
+	if len(filteredCandles) > 0 {
+		high = priceSlice[len(priceSlice)-1]
+		low = priceSlice[0]
+		open = filteredCandles[0].Price
+		closePirce = filteredCandles[len(filteredCandles)-1].Price
+	}
+
 	respParams := responseParam{
-		Open:  filteredCandles[0].Price,
-		High:  priceSlice[len(priceSlice)-1],
-		Low:   priceSlice[0],
-		Close: filteredCandles[len(filteredCandles)-1].Price,
+		Open:  open,
+		High:  high,
+		Low:   low,
+		Close: closePirce,
 	}
 
 	return respParams
 
+}
+
+func getCandleMap() (model.CandleMap, error) {
+	readFile, err := os.Open("./order_books.csv")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer readFile.Close()
+
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	var fileLines []string
+
+	for fileScanner.Scan() {
+		fileLines = append(fileLines, fileScanner.Text())
+	}
+
+	const (
+		layout = "2006-01-02 15:04:05"
+	)
+
+	jst, _ := time.LoadLocation("Asia/Tokyo")
+
+	mp := make(model.CandleMap)
+	for _, line := range fileLines {
+		lineParts := strings.Split(line, ",")
+		timePart := lineParts[0]
+		indx := strings.Index(timePart, " +0900")
+		timePart = timePart[0:indx]
+		timeStamp, err := time.ParseInLocation(layout, timePart, jst)
+		if err != nil {
+			log.Fatal("##", err)
+		}
+		price, err := strconv.Atoi(lineParts[2])
+		if err != nil {
+			log.Fatal("##", err)
+		}
+
+		slc, ok := mp[lineParts[1]]
+		if !ok {
+			slc = make([]model.Candle, 0)
+			slc = append(slc, model.Candle{
+				Time:  timeStamp,
+				Price: price,
+			})
+		} else {
+			slc = append(slc, model.Candle{
+				Time:  timeStamp,
+				Price: price,
+			})
+		}
+		mp[lineParts[1]] = slc
+	}
+
+	return mp, nil
 }
