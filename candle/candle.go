@@ -71,6 +71,10 @@ func (ch *candleHandler) GetCandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-type", "application/json")
+	w.Header().Add("open", strconv.Itoa(respParams.Open))
+	w.Header().Add("high", strconv.Itoa(respParams.High))
+	w.Header().Add("low", strconv.Itoa(respParams.Low))
+	w.Header().Add("close", strconv.Itoa(respParams.Close))
 
 	w.Write(respBytes)
 }
