@@ -92,7 +92,8 @@ type responseParam struct {
 }
 
 func (ch candleHandler) getResponseFromCandleMap(candles []model.Candle, rp RequestParam) responseParam {
-	requestTime := time.Date(rp.Year, time.Month(rp.Month), rp.Day, rp.Hour, 0, 0, 0, time.Local)
+	jst, _ := time.LoadLocation("Asia/Tokyo")
+	requestTime := time.Date(rp.Year, time.Month(rp.Month), rp.Day, rp.Hour, 0, 0, 0, jst)
 	fmt.Println("****", requestTime)
 
 	priceSlice := make([]int, 0)
